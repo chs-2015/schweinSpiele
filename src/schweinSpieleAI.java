@@ -21,20 +21,22 @@ public class schweinSpieleAI {
             activePlayerPerson = "Player 1",
             activePlayerComputer = "Computer";
 
-    // The computer will roll until 20 points max.
-    private static final int maxPointsComputer = 20;
+	// If a 1 is rolled, the game or round is lost!
+	private static final int diceEnd = 1;
 
-    // 100 points to win. Roll a 1 to lose the round or the game.
-    public static final int winningPoints = 100, diceEnd = 1; // 100 points to win, roll a 1 to to lose the round/game.
+    // Here are our glorious dice.
+    public static pairOfDice dice = new pairOfDice();
 
     // Current points in the round.
     public static int activeRoundPoints = 0,  player1Points = 0, playerComputerPoints = 0;
 
     public schweinSpieleAI() {
+    	// Set our active player to the computer.
+    	// Wait for the client to handoff to itself.
         activePlayer = activePlayerComputer;
     }
 
-    // Add/remove points as necessary
+    // Point functions
 
     private static void pointRoundModifier (int points) {
         // Modify the current points for the round.
@@ -50,51 +52,60 @@ public class schweinSpieleAI {
     }
 
     private static void pointTotalReset () {
-        // Resets the active players points back to zero.
+        // Resets the active players points (and round points) back to zero.
+        activeRoundPoints = 0;
         if (activePlayer.equals(activePlayerPerson))
             player1Points = 0;
         else
             playerComputerPoints = 0;
     }
 
-    public static void pointQualifier (int die1, int die2) {
+    private static int activePlayerTotal () {
+    	if (activePlayer.equals(activePlayerPerson))
+    		return player1Points;
+    	else
+    		return playerComputerPoints;
+    }
+
+    public static void pointQualifier () {
+    	// 100 points to win!
+    	final int winningPoints = 100;
+
         // This checks if they qualify for points.
-        if (hasLostRound(die1, die2)) {
+        if (hasLostRound()) {
             // They've potentially lost the round, or the game.
 
-            if (hasLostGame(die1, die2)) {
+            if (hasLostGame()) {
                 // They lost the game!
-                System.out.printf("%s has lost all of their points!%n", activePlayer);
+                System.out.printf("%s has lost all of their points!%n%n", activePlayer);
                 pointTotalReset();
             }
             else {
                 // They only lost the round.
-                System.out.printf("%s has lost the round!%n", activePlayer);
+                System.out.printf("%s has lost the round!%n%n", activePlayer);
                 activeRoundPoints = 0;
             }
         }
         else {
             // They haven't lost the round! Add points!
-            activeRoundPoints += die1 + die2;
+            activeRoundPoints += dice.die1 + dice.die2;
+
+            if ((activeRoundPoints + activePlayerTotal()) >= winningPoints) {
+            	System.out.printf("%s has won!%n", activePlayer);
+            	System.exit(0);
+            }
         }
     }
 
     // Round/game lost verifiers
 
-    public static boolean isPermittedToContinue(int die1, int die2) {
-        if (hasLostRound(die1, die2) || hasLostGame(die1, die2))
-            return false;
-        else
-            return true;
-    }
-
-    private static boolean hasLostRound(int die1, int die2) {
+    private static boolean hasLostRound() {
         // Has the round been lost?
 
-        if (((die1 == diceEnd) && (die2 != diceEnd)) || ((die1 != diceEnd) && (die2 == diceEnd))) {
+        if (((dice.die1 == diceEnd) && (dice.die2 != diceEnd)) || ((dice.die1 != diceEnd) && (dice.die2 == diceEnd))) {
             // They have rolled a SINGLE one.
             return true;
-        } else if (die1 == diceEnd && die2 == diceEnd) {
+        } else if (dice.die1 == diceEnd && dice.die2 == diceEnd) {
             // They have lost the game!
             return true;
         } else {
@@ -103,10 +114,10 @@ public class schweinSpieleAI {
         }
     }
 
-    private static boolean hasLostGame(int die1, int die2) {
+    private static boolean hasLostGame() {
         // Has the game been lost?
 
-        if (die1 == diceEnd && die2 == diceEnd) {
+        if (dice.die1 == diceEnd && dice.die2 == diceEnd) {
             if (activePlayer.equals(activePlayerPerson))
                 player1Points = 0;
             else
@@ -118,11 +129,20 @@ public class schweinSpieleAI {
         }
     }
 
+    public static boolean isPermittedToContinue() {
+        if (hasLostRound() || hasLostGame())
+            return false;
+        else
+            return true;
+    }
+
     // Gameplay handoffs
 
     private static void handoffCleanup() {
         // Cleanup variables.
         pointTotalModifier(activeRoundPoints);
+        System.out.printf("===> %s currently has %d total points, and %s has %d total points.%n",
+        	activePlayerPerson, player1Points, activePlayerComputer, playerComputerPoints);
         activeRoundPoints = 0;
     }
 
@@ -131,7 +151,7 @@ public class schweinSpieleAI {
         handoffCleanup();
 
         activePlayer = activePlayerPerson;
-        System.out.println("===> It is now the player's turn!");
+        System.out.println("====> It is now the player's turn!\n");
         schweinSpiele.playerRoll();
     }
 
@@ -140,29 +160,36 @@ public class schweinSpieleAI {
         handoffCleanup();
 
         activePlayer = activePlayerComputer;
-        System.out.println("===> It is now the computer's turn!");
+        System.out.println("====> It is now the computer's turn!\n");
 
         // Begin playing as the computer.
         pcPlay();
     }
 
+	// Rolling
+	public static void roll() {
+		dice.roll();
+	}
+
     // PC Player
 
     private static void pcPlay() {
-        pairOfDice dice = new pairOfDice();
+    	// The computer will roll up to 20 points.
+    	final int maxPointsComputer = 20;
 
         while (activeRoundPoints < maxPointsComputer) {
-            dice.roll();
+            roll();
+
             System.out.printf("The computer rolled a %d and a %d!%n", dice.die1, dice.die2);
 
-            pointQualifier(dice.die1, dice.die2);
+            pointQualifier();
 
-            if(!isPermittedToContinue(dice.die1, dice.die2))
+            if(!isPermittedToContinue())
                 break;
         }
 
         if (activeRoundPoints >= maxPointsComputer)
-            System.out.println("The computer has quit the round!");
+            System.out.println("The computer has quit the round!\n");
         pcPlayerHandoff();
     }
 }

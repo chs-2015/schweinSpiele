@@ -18,18 +18,22 @@ public class schweinSpiele {
         System.out.println("You will be playing against a computer; it will release the dice after having");
         System.out.println("twenty or more points in the round.\n");
 
-        schweinAI.pcPlayerHandoff();
+		schweinAI.pcPlayerHandoff();
         playerRoll();
     }
 
     public static void playerRoll() {
-        pairOfDice dice = new pairOfDice();
+    	// Roll the dice!
+    	schweinAI.roll();
 
-        dice.roll();
-        System.out.printf("%nYou rolled a %d and a %d!%n", dice.die1, dice.die2);
-        schweinAI.pointQualifier(dice.die1, dice.die2);
+    	// Here's what we have.
+        System.out.printf("You rolled a %d and a %d!%n", schweinAI.dice.die1, schweinAI.dice.die2);
 
-        if (schweinAI.isPermittedToContinue(dice.die1, dice.die2))
+        // Should we add onto their round points?
+        schweinAI.pointQualifier();
+
+        // Can they play again?
+        if (schweinAI.isPermittedToContinue())
             queryReplay();
         else
             schweinAI.playerPcHandoff();
@@ -48,9 +52,16 @@ public class schweinSpiele {
         userReplay = kbReader.nextLine();
         userReplay = userReplay.toLowerCase();
 
-        if (userReplay.equals(userReplayYes))
+        if (userReplay.equals(userReplayYes)) {
+        	System.out.println();
             playerRoll();
-        else
-            schweinAI.playerPcHandoff();
+        }
+        else if (userReplay.equals(userReplayNo)) {
+        	schweinAI.playerPcHandoff();
+    	}
+        else {
+        	System.out.println("Invalid input!");
+        	System.exit(0);
+        }
     }
 }
